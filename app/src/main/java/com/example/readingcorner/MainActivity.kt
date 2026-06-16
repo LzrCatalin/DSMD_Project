@@ -18,14 +18,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             ReadingCornerTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-
-                    Box(modifier = Modifier.padding(innerPadding)) {
-
-                        AppNavigation()
-
-                    }
-                }
+                AppNavigation()
             }
         }
     }

@@ -22,6 +22,7 @@ fun AppNavigation() {
 
     val authViewModel: AuthViewModel = viewModel()
     val errorMessage by authViewModel.errorMessage
+    val isLoading by authViewModel.isLoading
     val currentUser by authViewModel.currentUser
 
     NavHost(
@@ -32,6 +33,7 @@ fun AppNavigation() {
         composable("login") {
             LoginScreen(
                 errorMessage = errorMessage,
+                isLoading = isLoading,
                 onLoginClick = { email, password ->
                     authViewModel.logIn(email, password) {
                         navController.navigate("home") {
@@ -49,6 +51,7 @@ fun AppNavigation() {
         composable("signup") {
             SignUpScreen(
                 errorMessage = errorMessage,
+                isLoading = isLoading,
                 onSignUpClick = { username, email, password ->
                     authViewModel.signUp(username, email, password) {
                         navController.navigate("home") {

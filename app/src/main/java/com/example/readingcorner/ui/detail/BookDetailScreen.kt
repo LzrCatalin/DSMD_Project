@@ -22,9 +22,9 @@ import androidx.compose.ui.text.fromHtml
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil.compose.AsyncImage
 import com.example.readingcorner.data.ForumThread
 import com.example.readingcorner.data.local.ShelfStatus
+import com.example.readingcorner.ui.components.BookCover
 import com.example.readingcorner.ui.components.RatingBar
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -74,14 +74,9 @@ fun BookDetailScreen(
                     .padding(16.dp)
             ) {
                 Row {
-                    AsyncImage(
-                        model = book.coverUrl,
-                        contentDescription = null,
-                        modifier = Modifier
-                            .size(120.dp, 180.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(Color.LightGray),
-                        contentScale = ContentScale.Crop
+                    BookCover(
+                        coverUrl = book.coverUrl,
+                        modifier = Modifier.size(120.dp, 180.dp)
                     )
                     Spacer(Modifier.width(16.dp))
                     Column {

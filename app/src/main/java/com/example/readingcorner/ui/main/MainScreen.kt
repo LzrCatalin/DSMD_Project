@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -36,7 +37,8 @@ fun MainScreen(
     onClubClick: (String) -> Unit,
     onLogout: () -> Unit
 ) {
-    var selectedTab by remember { mutableStateOf(MainTab.HOME) }
+
+    var selectedTab by rememberSaveable { mutableStateOf(MainTab.HOME) }
 
     Scaffold(
         topBar = {

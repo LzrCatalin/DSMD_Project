@@ -28,6 +28,9 @@ fun HomeContent(
     onBookClick: (String) -> Unit = {},
     homeViewModel: HomeViewModel = viewModel()
 ) {
+    LaunchedEffect(Unit){
+        homeViewModel.refreshRecommendations()
+    }
     val userData by homeViewModel.userData
     val currentlyReading = homeViewModel.currentlyReading
     val wantToRead = homeViewModel.wantToRead

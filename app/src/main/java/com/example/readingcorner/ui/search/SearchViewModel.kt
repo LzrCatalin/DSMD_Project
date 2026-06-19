@@ -11,11 +11,15 @@ import com.example.readingcorner.data.prefs.PreferencesManager
 import com.example.readingcorner.data.repository.BookRepository
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 
 class SearchViewModel(app: Application) : AndroidViewModel(app) {
 
     private val repository = BookRepository()
     private val prefs = PreferencesManager(app)
+
+    private var searchJob: Job? = null
 
     var query by mutableStateOf("")
         private set
@@ -26,19 +30,18 @@ class SearchViewModel(app: Application) : AndroidViewModel(app) {
     var error by mutableStateOf<String?>(null)
         private set
 
-    init {
-        // Restore the last query from DataStore and run it.
-        viewModelScope.launch {
-            val last = prefs.lastSearchQuery.first()
-            if (last.isNotBlank()) {
-                query = last
-                search()
-            }
-        }
-    }
 
     fun onQueryChange(newQuery: String) {
         query = newQuery
+        searchJob?.cancel()
+        if (newQuery.isBlank()) {
+            results = emptyList()
+        } else {
+            searchJob = viewModelScope.launch {
+                delay(500)
+                search()
+            }
+        }
     }
 
     fun search() {

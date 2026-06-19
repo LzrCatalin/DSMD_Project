@@ -40,7 +40,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     init {
         fetchUserData()
         observeShelves()
-        loadRecommendations()
+        refreshRecommendations()
         // Backfill: mirror any locally-saved books to Firestore so club members can see them.
         viewModelScope.launch { shelfRepository.syncShelfToCloud() }
     }
@@ -72,32 +72,52 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
      * the user's shelf so it feels personal; falls back to popular fiction for new users.
      * Books already saved on a shelf are filtered out.
      */
-    private fun loadRecommendations() {
+    fun refreshRecommendations() {
         viewModelScope.launch {
             val shelf = shelfRepository.observeAll().first()
-            val seedAuthor = shelf.firstOrNull()?.authors
-                ?.substringBefore(",")
-                ?.trim()
-                .orEmpty()
             val ownedIds = shelf.map { it.googleId }.toSet()
 
+            val likedBooks = shelf.filter { it.myRating >= 4}
+
+            val dislikedAuthors = shelf.filter { it.myRating in 1.0..2.0 }
+                .map { it.authors.substringBefore(",").trim() }
+                .filter{it.isNotBlank()}
+                .toSet()
+
+            val favoriteAuthors = likedBooks.map {it.authors.substringBefore(",").trim()}
+                .filter{it.isNotBlank()}
+                .distinct()
+
+            val favoriteGenres = likedBooks.flatMap {it.categories.split(",")}
+                .map{it.trim()}
+                .filter{it.isNotBlank()}
+                .distinct()
+
             recommendationsLoading = true
+            val pool = mutableListOf<Book>()
 
-            val primaryQuery = if (seedAuthor.isNotBlank()) "inauthor:$seedAuthor" else "subject:fiction"
-            var results = bookRepository.searchBooks(primaryQuery)
-                .getOrElse { emptyList() }
-                .filter { it.id.isNotBlank() && it.id !in ownedIds }
-                .take(10)
+            if (favoriteAuthors.isEmpty() && favoriteGenres.isEmpty()){
+                val res = bookRepository.searchBooks("subject:fiction").getOrNull() ?: emptyList()
+                pool.addAll(res)
+            } else {
+                favoriteAuthors.shuffled().take(2).forEach { author ->
+                    val res = bookRepository.searchBooks("inauthor:\"$author\"").getOrNull() ?: emptyList()
+                    pool.addAll(res)
+                }
 
-            // Fallback: author search yielded nothing, try popular fiction
-            if (results.isEmpty() && seedAuthor.isNotBlank()) {
-                results = bookRepository.searchBooks("subject:fiction")
-                    .getOrElse { emptyList() }
-                    .filter { it.id.isNotBlank() && it.id !in ownedIds }
-                    .take(10)
+                favoriteGenres.shuffled().take(2).forEach { genre ->
+                    val res = bookRepository.searchBooks("subject:\"$genre\"").getOrNull() ?: emptyList()
+                    pool.addAll(res)
+                }
             }
 
-            recommendations = results
+            recommendations = pool
+                .filter{it.id !in ownedIds}
+                .filter{it.author !in dislikedAuthors}
+                .distinctBy{"${it.title.trim().lowercase()}_${it.author.trim().lowercase()}"}
+                .shuffled()
+                .take(15)
+
             recommendationsLoading = false
         }
     }

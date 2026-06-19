@@ -48,7 +48,8 @@ class ShelfRepository(
             coverUrl = book.coverUrl,
             status = status,
             myRating = existing?.myRating ?: 0f,
-            addedAt = existing?.addedAt ?: addedAt
+            addedAt = existing?.addedAt ?: addedAt,
+            categories = book.categories.joinToString(",")
         )
         dao.upsert(row)
         if (owner.isNotBlank()) shelfDoc(owner, book.id).set(row.toEntry())
@@ -84,5 +85,6 @@ private fun ShelfBook.toEntry() = ShelfEntry(
     coverUrl = coverUrl,
     status = status.name,
     myRating = myRating,
-    addedAt = addedAt
+    addedAt = addedAt,
+    categories = categories
 )

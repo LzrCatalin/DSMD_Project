@@ -29,5 +29,6 @@ fun ShelfBook.toBook(): Book = Book(
     title = title,
     author = authors,
     coverUrl = coverUrl,
-    rating = myRating.toDouble()
+    rating = myRating.toDouble(),
+    categories = categories.split(",").filter { it.isNotBlank() }
 )

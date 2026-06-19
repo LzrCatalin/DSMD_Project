@@ -20,8 +20,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil.compose.AsyncImage
 import com.example.readingcorner.data.Book
+import com.example.readingcorner.ui.components.BookCover
 
 @Composable
 fun HomeContent(
@@ -140,15 +140,11 @@ fun CurrentlyReadingCard(book: Book, onClick: () -> Unit) {
                 .padding(12.dp)
                 .height(120.dp)
         ) {
-            AsyncImage(
-                model = book.coverUrl,
-                contentDescription = null,
+            BookCover(
+                coverUrl = book.coverUrl,
                 modifier = Modifier
                     .width(80.dp)
                     .fillMaxHeight()
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(Color.LightGray),
-                contentScale = ContentScale.Crop
             )
             Spacer(modifier = Modifier.width(16.dp))
             Column(
@@ -197,15 +193,11 @@ fun BookCoverItem(book: Book, onClick: () -> Unit) {
             .width(100.dp)
             .clickable(onClick = onClick)
     ) {
-        AsyncImage(
-            model = book.coverUrl,
-            contentDescription = null,
+        BookCover(
+            coverUrl = book.coverUrl,
             modifier = Modifier
                 .height(150.dp)
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(8.dp))
-                .background(Color.LightGray),
-            contentScale = ContentScale.Crop
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
@@ -227,14 +219,10 @@ fun RecommendationItem(book: Book, onClick: () -> Unit) {
             .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        AsyncImage(
-            model = book.coverUrl,
-            contentDescription = null,
-            modifier = Modifier
-                .size(60.dp, 90.dp)
-                .clip(RoundedCornerShape(4.dp))
-                .background(Color.LightGray),
-            contentScale = ContentScale.Crop
+        BookCover(
+            coverUrl = book.coverUrl,
+            modifier = Modifier.size(60.dp, 90.dp),
+            cornerRadius = 4.dp
         )
         Spacer(modifier = Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f)) {

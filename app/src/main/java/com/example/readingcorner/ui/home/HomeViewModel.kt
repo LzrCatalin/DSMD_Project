@@ -79,16 +79,25 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
                 ?.substringBefore(",")
                 ?.trim()
                 .orEmpty()
-            val query = if (seedAuthor.isNotBlank()) "inauthor:$seedAuthor" else "subject:fiction"
             val ownedIds = shelf.map { it.googleId }.toSet()
 
             recommendationsLoading = true
-            bookRepository.searchBooks(query)
-                .onSuccess { books ->
-                    recommendations = books
-                        .filter { it.id.isNotBlank() && it.id !in ownedIds }
-                        .take(10)
-                }
+
+            val primaryQuery = if (seedAuthor.isNotBlank()) "inauthor:$seedAuthor" else "subject:fiction"
+            var results = bookRepository.searchBooks(primaryQuery)
+                .getOrElse { emptyList() }
+                .filter { it.id.isNotBlank() && it.id !in ownedIds }
+                .take(10)
+
+            // Fallback: author search yielded nothing, try popular fiction
+            if (results.isEmpty() && seedAuthor.isNotBlank()) {
+                results = bookRepository.searchBooks("subject:fiction")
+                    .getOrElse { emptyList() }
+                    .filter { it.id.isNotBlank() && it.id !in ownedIds }
+                    .take(10)
+            }
+
+            recommendations = results
             recommendationsLoading = false
         }
     }

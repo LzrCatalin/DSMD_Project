@@ -21,6 +21,8 @@ class ProfileViewModel(app: Application) : AndroidViewModel(app) {
     val readingCount: Flow<Int> = repository.countByStatus(ShelfStatus.READING)
     val readCount: Flow<Int> = repository.countByStatus(ShelfStatus.READ)
 
+    val username: Flow<String> = userRepository.observeUser().map { it?.username?.ifBlank { null } ?: "Reader" }
+
     /** Bookstars earned from social activity (forum posts, club joins), stored in Firestore. */
     val socialBookstars: Flow<Int> = userRepository.observeUser().map { (it?.bookstars ?: 0L).toInt() }
 }

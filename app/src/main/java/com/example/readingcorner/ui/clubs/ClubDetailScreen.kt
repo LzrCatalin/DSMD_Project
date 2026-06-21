@@ -39,7 +39,7 @@ fun ClubDetailScreen(
     var draft by remember { mutableStateOf("") }
     var selectedTab by remember { mutableStateOf(0) }
     var showLeaveDialog by remember { mutableStateOf(false) }
-    val tabs = listOf("About", "Members", "Chat")
+    val tabs = listOf("Chat", "Members", "About")
     val isOwner = club?.ownerUid == viewModel.currentUid
 
     if (showLeaveDialog) {
@@ -114,9 +114,9 @@ fun ClubDetailScreen(
             }
 
             when (selectedTab) {
-                0 -> AboutTab(club, viewModel.currentUid, members, onSetCurrentBook = { title -> viewModel.setCurrentBook(title) })
+                2 -> AboutTab(club, viewModel.currentUid, members)
                 1 -> MembersTab(members)
-                2 -> ChatTab(
+                0 -> ChatTab(
                     messages = messages,
                     currentUid = viewModel.currentUid,
                     isMember = viewModel.isMember,

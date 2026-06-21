@@ -114,7 +114,7 @@ fun ClubDetailScreen(
             }
 
             when (selectedTab) {
-                2 -> AboutTab(club, viewModel.currentUid, members)
+                2 -> AboutTab(club, viewModel.currentUid, members, onSetCurrentBook = { title -> viewModel.setCurrentBook(title) })
                 1 -> MembersTab(members)
                 0 -> ChatTab(
                     messages = messages,

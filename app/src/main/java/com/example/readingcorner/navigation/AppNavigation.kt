@@ -44,6 +44,9 @@ fun AppNavigation() {
                 onNavigateToSignUp = {
                     authViewModel.clearError()
                     navController.navigate("signup")
+                },
+                onForgotPassword = { email, onSuccess, onError ->
+                    authViewModel.resetPassword(email, onSuccess, onError)
                 }
             )
         }

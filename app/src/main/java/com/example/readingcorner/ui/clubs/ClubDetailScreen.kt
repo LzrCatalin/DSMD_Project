@@ -8,20 +8,26 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.readingcorner.data.Book
 import com.example.readingcorner.data.Club
 import com.example.readingcorner.data.ClubMessage
 import com.example.readingcorner.data.ShelfEntry
+import com.example.readingcorner.ui.components.BookCover
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -113,7 +119,16 @@ fun ClubDetailScreen(
             }
 
             when (selectedTab) {
-                2 -> AboutTab(club, viewModel.currentUid, members)
+                2 -> AboutTab(
+                    club = club,
+                    currentUid = viewModel.currentUid,
+                    members = members,
+                    searchResults = viewModel.bookSearchResults,
+                    searchLoading = viewModel.bookSearchLoading,
+                    onSearch = { q -> viewModel.searchBooks(q) },
+                    onClearSearch = { viewModel.clearBookSearch() },
+                    onSetCurrentBook = { book -> viewModel.setCurrentBook(book) }
+                )
                 1 -> MembersTab(members)
                 0 -> ChatTab(
                     messages = messages,
@@ -132,12 +147,120 @@ fun ClubDetailScreen(
 }
 
 @Composable
-private fun AboutTab(club: Club?, currentUid: String?, members: List<MemberShelf>) {
+private fun AboutTab(
+    club: Club?,
+    currentUid: String?,
+    members: List<MemberShelf>,
+    searchResults: List<Book> = emptyList(),
+    searchLoading: Boolean = false,
+    onSearch: (String) -> Unit = {},
+    onClearSearch: () -> Unit = {},
+    onSetCurrentBook: (Book) -> Unit = {}
+) {
     if (club == null) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
         }
         return
+    }
+
+    val isOwner = club.ownerUid == currentUid
+    var showPickerDialog by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
+
+    if (showPickerDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showPickerDialog = false
+                searchQuery = ""
+                onClearSearch()
+            },
+            title = { Text("Set currently reading") },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        label = { Text("Search a book…") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        trailingIcon = {
+                            IconButton(onClick = { onSearch(searchQuery) }) {
+                                Icon(Icons.Default.Search, contentDescription = "Search")
+                            }
+                        }
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    if (searchLoading) {
+                        Box(Modifier.fillMaxWidth().height(80.dp), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(modifier = Modifier.size(28.dp), strokeWidth = 2.dp)
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(max = 300.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            items(searchResults) { book ->
+                                Surface(
+                                    onClick = {
+                                        onSetCurrentBook(book)
+                                        showPickerDialog = false
+                                        searchQuery = ""
+                                        onClearSearch()
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = MaterialTheme.shapes.medium,
+                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                    ) {
+                                        BookCover(
+                                            coverUrl = book.coverUrl,
+                                            modifier = Modifier.size(40.dp, 58.dp),
+                                            cornerRadius = 4.dp
+                                        )
+                                        Column(Modifier.weight(1f)) {
+                                            Text(
+                                                book.title,
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.SemiBold,
+                                                maxLines = 2,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                            Text(
+                                                book.author,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                        }
+                                        Text(
+                                            "Select",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = {
+                    showPickerDialog = false
+                    searchQuery = ""
+                    onClearSearch()
+                }) { Text("Cancel") }
+            }
+        )
     }
 
     LazyColumn(
@@ -156,13 +279,71 @@ private fun AboutTab(club: Club?, currentUid: String?, members: List<MemberShelf
             )
         }
         item {
-            SectionLabel("Currently reading")
-            Spacer(Modifier.height(4.dp))
-            Text(
-                club.currentBook.ifBlank { "No book selected yet." },
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = if (club.currentBook.isNotBlank()) FontWeight.SemiBold else FontWeight.Normal
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                SectionLabel("Currently reading")
+                if (isOwner) {
+                    IconButton(
+                        onClick = { showPickerDialog = true },
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Edit,
+                            contentDescription = "Edit currently reading",
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            if (club.currentBook.isNotBlank()) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        BookCover(
+                            coverUrl = club.currentBookCover,
+                            modifier = Modifier.size(56.dp, 84.dp),
+                            cornerRadius = 6.dp
+                        )
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(
+                                club.currentBook,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 3,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            if (club.currentBookAuthor.isNotBlank()) {
+                                Text(
+                                    club.currentBookAuthor,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+                    }
+                }
+            } else {
+                Text(
+                    "No book selected yet.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
         item {
             SectionLabel("Owner")

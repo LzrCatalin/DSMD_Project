@@ -6,10 +6,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.readingcorner.data.Book
 import com.example.readingcorner.data.Club
 import com.example.readingcorner.data.ClubMessage
 import com.example.readingcorner.data.ShelfEntry
 import com.example.readingcorner.data.User
+import com.example.readingcorner.data.repository.BookRepository
 import com.example.readingcorner.data.repository.SocialRepository
 import com.example.readingcorner.data.repository.UserRepository
 import kotlinx.coroutines.Job
@@ -29,6 +31,7 @@ class ClubDetailViewModel(app: Application) : AndroidViewModel(app) {
 
     private val social = SocialRepository()
     private val userRepository = UserRepository()
+    private val bookRepository = BookRepository()
 
     val currentUid: String? get() = userRepository.currentUid
 
@@ -37,6 +40,11 @@ class ClubDetailViewModel(app: Application) : AndroidViewModel(app) {
     var messages by mutableStateOf<List<ClubMessage>>(emptyList())
         private set
     var members by mutableStateOf<List<MemberShelf>>(emptyList())
+        private set
+
+    var bookSearchResults by mutableStateOf<List<Book>>(emptyList())
+        private set
+    var bookSearchLoading by mutableStateOf(false)
         private set
 
     private var currentUser: User? = null
@@ -97,6 +105,35 @@ class ClubDetailViewModel(app: Application) : AndroidViewModel(app) {
         } else {
             social.joinClub(clubId, uid) { userRepository.awardBookstars(15) }
         }
+    }
+
+    fun searchBooks(query: String) {
+        if (query.isBlank()) {
+            bookSearchResults = emptyList()
+            return
+        }
+        bookSearchLoading = true
+        viewModelScope.launch {
+            bookRepository.searchBooks(query)
+                .onSuccess { bookSearchResults = it }
+                .onFailure { bookSearchResults = emptyList() }
+            bookSearchLoading = false
+        }
+    }
+
+    fun clearBookSearch() {
+        bookSearchResults = emptyList()
+    }
+
+    fun setCurrentBook(book: Book) {
+        val clubId = loadedId ?: return
+        social.setCurrentBook(
+            clubId = clubId,
+            bookId = book.id,
+            title = book.title,
+            author = book.author,
+            cover = book.coverUrl
+        )
     }
 
     fun sendMessage(text: String) {

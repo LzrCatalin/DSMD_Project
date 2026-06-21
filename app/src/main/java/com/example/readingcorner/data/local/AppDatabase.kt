@@ -17,7 +17,7 @@ class Converters {
         runCatching { ShelfStatus.valueOf(value) }.getOrDefault(ShelfStatus.TO_READ)
 }
 
-@Database(entities = [ShelfBook::class], version = 2, exportSchema = false)
+@Database(entities = [ShelfBook::class], version = 3, exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
 

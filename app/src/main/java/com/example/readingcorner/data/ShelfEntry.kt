@@ -11,5 +11,6 @@ data class ShelfEntry(
     val coverUrl: String = "",
     val status: String = "TO_READ",
     val myRating: Float = 0f,
-    val addedAt: Long = 0L
+    val addedAt: Long = 0L,
+    val categories: String = ""
 )

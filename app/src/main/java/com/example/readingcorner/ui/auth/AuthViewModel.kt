@@ -96,6 +96,16 @@ class AuthViewModel : ViewModel() {
         _errorMessage.value = null
     }
 
+    fun resetPassword(email: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
+        if (email.isBlank()) {
+            onError("Please enter your email address.")
+            return
+        }
+        auth.sendPasswordResetEmail(email.trim())
+            .addOnSuccessListener { onSuccess() }
+            .addOnFailureListener { e -> onError(friendlyError(e, "Failed to send reset email. Please try again.")) }
+    }
+
     private fun friendlyError(exception: Exception?, fallback: String): String {
         val code = (exception as? FirebaseAuthException)?.errorCode ?: ""
         return when {

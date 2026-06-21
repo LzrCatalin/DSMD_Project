@@ -99,6 +99,11 @@ class ClubDetailViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    fun setCurrentBook(title: String) {
+        val clubId = loadedId ?: return
+        social.setCurrentBook(clubId, title.trim())
+    }
+
     fun sendMessage(text: String) {
         val clubId = loadedId ?: return
         val uid = currentUid ?: return

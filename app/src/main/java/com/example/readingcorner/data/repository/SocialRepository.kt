@@ -148,6 +148,10 @@ class SocialRepository(
             .update("members", FieldValue.arrayRemove(uid))
     }
 
+    fun setCurrentBook(clubId: String, title: String) {
+        db.collection("clubs").document(clubId).update("currentBook", title)
+    }
+
     fun observeMessages(clubId: String): Flow<List<ClubMessage>> = callbackFlow {
         val registration = db.collection("clubs").document(clubId)
             .collection("messages")

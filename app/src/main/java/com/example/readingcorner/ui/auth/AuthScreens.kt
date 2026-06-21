@@ -14,10 +14,84 @@ fun LoginScreen(
     errorMessage: String? = null,
     isLoading: Boolean = false,
     onLoginClick: (String, String) -> Unit,
-    onNavigateToSignUp: () -> Unit
+    onNavigateToSignUp: () -> Unit,
+    onForgotPassword: (String, () -> Unit, (String) -> Unit) -> Unit = { _, _, _ -> }
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var showForgotDialog by remember { mutableStateOf(false) }
+    var resetEmail by remember { mutableStateOf("") }
+    var resetError by remember { mutableStateOf<String?>(null) }
+    var resetSuccess by remember { mutableStateOf(false) }
+
+    if (showForgotDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showForgotDialog = false
+                resetEmail = ""
+                resetError = null
+                resetSuccess = false
+            },
+            title = { Text("Reset Password") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (resetSuccess) {
+                        Text(
+                            "A reset link has been sent to $resetEmail. Check your inbox.",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    } else {
+                        Text(
+                            "Enter your account email and we'll send you a reset link.",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        OutlinedTextField(
+                            value = resetEmail,
+                            onValueChange = { resetEmail = it; resetError = null },
+                            label = { Text("Email") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            isError = resetError != null
+                        )
+                        if (resetError != null) {
+                            Text(
+                                resetError!!,
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                if (resetSuccess) {
+                    TextButton(onClick = {
+                        showForgotDialog = false
+                        resetEmail = ""
+                        resetSuccess = false
+                    }) { Text("Done") }
+                } else {
+                    TextButton(onClick = {
+                        onForgotPassword(
+                            resetEmail,
+                            { resetSuccess = true },
+                            { err -> resetError = err }
+                        )
+                    }) { Text("Send") }
+                }
+            },
+            dismissButton = {
+                if (!resetSuccess) {
+                    TextButton(onClick = {
+                        showForgotDialog = false
+                        resetEmail = ""
+                        resetError = null
+                    }) { Text("Cancel") }
+                }
+            }
+        )
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -55,7 +129,23 @@ fun LoginScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
+                TextButton(
+                    onClick = {
+                        resetEmail = email
+                        resetError = null
+                        resetSuccess = false
+                        showForgotDialog = true
+                    },
+                    enabled = !isLoading
+                ) {
+                    Text("Forgot password?")
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
 
             Button(
                 onClick = { onLoginClick(email, password) },

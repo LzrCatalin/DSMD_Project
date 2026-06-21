@@ -11,6 +11,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -113,7 +114,7 @@ fun ClubDetailScreen(
             }
 
             when (selectedTab) {
-                0 -> AboutTab(club, viewModel.currentUid, members)
+                0 -> AboutTab(club, viewModel.currentUid, members, onSetCurrentBook = { title -> viewModel.setCurrentBook(title) })
                 1 -> MembersTab(members)
                 2 -> ChatTab(
                     messages = messages,
@@ -132,12 +133,46 @@ fun ClubDetailScreen(
 }
 
 @Composable
-private fun AboutTab(club: Club?, currentUid: String?, members: List<MemberShelf>) {
+private fun AboutTab(
+    club: Club?,
+    currentUid: String?,
+    members: List<MemberShelf>,
+    onSetCurrentBook: (String) -> Unit = {}
+) {
     if (club == null) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
         }
         return
+    }
+
+    val isOwner = club.ownerUid == currentUid
+    var showEditBookDialog by remember { mutableStateOf(false) }
+    var bookDraft by remember { mutableStateOf("") }
+
+    if (showEditBookDialog) {
+        AlertDialog(
+            onDismissRequest = { showEditBookDialog = false },
+            title = { Text("Set currently reading") },
+            text = {
+                OutlinedTextField(
+                    value = bookDraft,
+                    onValueChange = { bookDraft = it },
+                    label = { Text("Book title") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    onSetCurrentBook(bookDraft)
+                    showEditBookDialog = false
+                }) { Text("Save") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditBookDialog = false }) { Text("Cancel") }
+            }
+        )
     }
 
     LazyColumn(
@@ -156,7 +191,29 @@ private fun AboutTab(club: Club?, currentUid: String?, members: List<MemberShelf
             )
         }
         item {
-            SectionLabel("Currently reading")
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                SectionLabel("Currently reading")
+                if (isOwner) {
+                    IconButton(
+                        onClick = {
+                            bookDraft = club.currentBook
+                            showEditBookDialog = true
+                        },
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Edit,
+                            contentDescription = "Edit currently reading",
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            }
             Spacer(Modifier.height(4.dp))
             Text(
                 club.currentBook.ifBlank { "No book selected yet." },

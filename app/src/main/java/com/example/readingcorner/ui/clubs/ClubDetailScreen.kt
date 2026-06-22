@@ -130,17 +130,23 @@ fun ClubDetailScreen(
                     onSetCurrentBook = { book -> viewModel.setCurrentBook(book) }
                 )
                 1 -> MembersTab(members)
-                0 -> ChatTab(
-                    messages = messages,
-                    currentUid = viewModel.currentUid,
-                    isMember = viewModel.isMember,
-                    draft = draft,
-                    onDraftChange = { draft = it },
-                    onSend = {
-                        viewModel.sendMessage(draft)
-                        draft = ""
+                0 -> {
+                    val memberBookstars = remember(members) {
+                        members.associate { it.uid to it.bookstars }
                     }
-                )
+                    ChatTab(
+                        messages = messages,
+                        currentUid = viewModel.currentUid,
+                        isMember = viewModel.isMember,
+                        memberBookstars = memberBookstars,
+                        draft = draft,
+                        onDraftChange = { draft = it },
+                        onSend = {
+                            viewModel.sendMessage(draft)
+                            draft = ""
+                        }
+                    )
+                }
             }
         }
     }
@@ -359,6 +365,10 @@ private fun AboutTab(
                     SuggestionChip(onClick = {}, label = { Text("You") })
                 }
             }
+            if (owner != null) {
+                Spacer(Modifier.height(4.dp))
+                TierBadge(owner.bookstars)
+            }
         }
     }
 }
@@ -418,11 +428,14 @@ private fun MemberCard(member: MemberShelf) {
                         fontWeight = FontWeight.Bold
                     )
                 }
-                Text(
-                    member.username,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold
-                )
+                Column {
+                    Text(
+                        member.username,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                    TierBadge(member.bookstars)
+                }
             }
 
             if (member.toRead.isEmpty() && member.reading.isEmpty() && member.read.isEmpty()) {
@@ -490,6 +503,7 @@ private fun ChatTab(
     messages: List<ClubMessage>,
     currentUid: String?,
     isMember: Boolean,
+    memberBookstars: Map<String, Long> = emptyMap(),
     draft: String,
     onDraftChange: (String) -> Unit,
     onSend: () -> Unit
@@ -527,7 +541,11 @@ private fun ChatTab(
                 }
             } else {
                 items(messages) { msg ->
-                    MessageBubble(msg, isMine = msg.authorUid == currentUid)
+                    MessageBubble(
+                        message = msg,
+                        isMine = msg.authorUid == currentUid,
+                        bookstars = memberBookstars[msg.authorUid]
+                    )
                 }
             }
         }
@@ -564,7 +582,7 @@ private fun ChatTab(
 }
 
 @Composable
-private fun MessageBubble(message: ClubMessage, isMine: Boolean) {
+private fun MessageBubble(message: ClubMessage, isMine: Boolean, bookstars: Long? = null) {
     val bubbleColor =
         if (isMine) MaterialTheme.colorScheme.primaryContainer
         else MaterialTheme.colorScheme.surfaceVariant
@@ -593,6 +611,9 @@ private fun MessageBubble(message: ClubMessage, isMine: Boolean) {
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold
                     )
+                    if (bookstars != null) {
+                        TierBadge(bookstars)
+                    }
                     if (timestamp.isNotEmpty()) {
                         Text(
                             timestamp,
@@ -615,4 +636,40 @@ private fun SectionLabel(text: String) {
         style = MaterialTheme.typography.labelMedium,
         color = MaterialTheme.colorScheme.primary
     )
+}
+
+private fun starTier(bookstars: Long): Int = when {
+    bookstars >= 200 -> 5
+    bookstars >= 120 -> 4
+    bookstars >= 60  -> 3
+    bookstars >= 20  -> 2
+    else             -> 1
+}
+
+private fun tierName(tier: Int): String = when (tier) {
+    1    -> "Beginner"
+    2    -> "Reader"
+    3    -> "Bookworm"
+    4    -> "Avid Reader"
+    5    -> "Scholar"
+    else -> "Reader"
+}
+
+@Composable
+private fun TierBadge(bookstars: Long) {
+    val tier = starTier(bookstars)
+    val name = tierName(tier)
+    val stars = "★".repeat(tier)
+    Surface(
+        shape = MaterialTheme.shapes.small,
+        color = MaterialTheme.colorScheme.tertiaryContainer
+    ) {
+        Text(
+            "$stars $name",
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onTertiaryContainer,
+            fontWeight = FontWeight.SemiBold
+        )
+    }
 }

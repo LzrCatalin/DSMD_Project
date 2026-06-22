@@ -22,6 +22,7 @@ import kotlinx.coroutines.launch
 data class MemberShelf(
     val uid: String,
     val username: String,
+    val bookstars: Long,
     val toRead: List<ShelfEntry>,
     val reading: List<ShelfEntry>,
     val read: List<ShelfEntry>
@@ -89,6 +90,7 @@ class ClubDetailViewModel(app: Application) : AndroidViewModel(app) {
                 MemberShelf(
                     uid = uid,
                     username = user?.username?.ifBlank { null } ?: "Reader",
+                    bookstars = user?.bookstars ?: 0L,
                     toRead = shelf.filter { it.status == "TO_READ" },
                     reading = shelf.filter { it.status == "READING" },
                     read = shelf.filter { it.status == "READ" }
